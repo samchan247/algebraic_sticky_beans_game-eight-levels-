@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代數糖黐豆 Algebraic Sticky Beans - 進階混合因式分解 Advanced Mixed Factorizations</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: ZCOOL KuaiLe & Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        hkRed: '#C8102E',
+                        hkGold: '#F8C300',
+                        hkJade: '#00A86B',
+                        hkWood: '#3D2314',
+                        hkPaper: '#FFFDF0',
+                        beanGreen: '#4CAF50',
+                        beanPink: '#FF6B8B'
+                    },
+                    fontFamily: {
+                        hk: ['"ZCOOL KuaiLe"', 'cursive', 'sans-serif'],
+                        sans: ['"Noto Sans TC"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #2D1406;
+            background-image: radial-gradient(#4a230d 1px, transparent 1px);
+            background-size: 20px 20px;
+            font-family: 'Noto Sans TC', sans-serif;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .font-hk-style {
+            font-family: 'ZCOOL KuaiLe', cursive, sans-serif;
+        }
+
+        /* Standard Math Typography */
+        .math-expr {
+            font-family: 'Times New Roman', Times, serif;
+            font-style: italic;
+        }
+        .math-expr .non-italic {
+            font-style: normal;
+        }
+        .math-expr sup {
+            font-style: normal;
+            font-size: 0.65em;
+            vertical-align: super;
+            line-height: 0;
+            font-weight: bold;
+        }
+
+        /* Card & Button Styles */
+        .hk-card {
+            background: rgba(255, 253, 240, 0.98);
+            border: 4px solid #F8C300;
+            box-shadow: 0 8px 0 #3D2314, 0 15px 25px rgba(0,0,0,0.5);
+            border-radius: 1.25rem;
+        }
+
+        .hk-btn {
+            background: linear-gradient(180deg, #F8C300 0%, #E0A000 100%);
+            color: #3D2314;
+            border: 3px solid #3D2314;
+            box-shadow: 0 5px 0 #3D2314;
+            transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 900;
+        }
+
+        .hk-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 0 #3D2314;
+        }
+
+        .hk-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #3D2314;
+        }
+
+        .hk-btn-red {
+            background: linear-gradient(180deg, #FF4D4D 0%, #C8102E 100%);
+            color: #FFFDF0;
+        }
+
+        .hk-btn-green {
+            background: linear-gradient(180deg, #2ECC71 0%, #00A86B 100%);
+            color: #FFFDF0;
+        }
+
+        .hk-btn-purple {
+            background: linear-gradient(180deg, #A855F7 0%, #7E22CE 100%);
+            color: #FFFDF0;
+        }
+
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(-1deg); }
+            50% { transform: rotate(1deg); }
+        }
+
+        .animate-wiggle {
+            animation: wiggle 3s infinite ease-in-out;
+        }
+
+        /* Score Indicator Animations */
+        @keyframes floatScore {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-45px) scale(1.35); }
+        }
+        .float-score-plus {
+            animation: floatScore 0.85s ease-out forwards;
+            color: #10B981;
+            font-weight: 900;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        }
+        .float-score-minus {
+            animation: floatScore 0.85s ease-out forwards;
+            color: #EF4444;
+            font-weight: 900;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        }
+
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .neon-text-gold {
+            text-shadow: 0 0 8px rgba(248, 195, 0, 0.8), 2px 2px 0px #3D2314;
+        }
+
+        .card-selected {
+            background-color: #FEF08A !important;
+            border-color: #D97706 !important;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.6) !important;
+            transform: scale(1.03);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-800 flex flex-col justify-between overflow-x-hidden p-2 sm:p-4">
+
+    <!-- Particle Overlay -->
+    <canvas id="particleCanvas"></canvas>
+
+    <header class="w-full max-w-4xl mx-auto mb-2 sm:mb-4 flex flex-wrap justify-between items-center gap-2 px-2">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="showScreen('mainMenu')">
+            <div class="w-12 h-12 bg-hkRed border-2 border-hkGold rounded-full flex items-center justify-center text-hkGold text-2xl font-hk-style shadow-md hover:scale-105 transition transform">
+                豆
+            </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-black text-hkGold font-hk-style tracking-wider neon-text-gold flex items-center gap-2">
+                    代數糖黐豆 
+                    <span class="text-xs text-white font-sans bg-hkRed px-2 py-0.5 rounded-full border border-hkGold">
+                        進階混合因式分解 (Mixed Perfect Squares & Diff. of Squares)
+                    </span>
+                </h1>
+                <p class="text-xs text-yellow-200 font-medium">包含: <span class="math-expr"><i>a</i><sup>2</sup><i>x</i><sup>2</sup>-<i>b</i><sup>2</sup></span>, <span class="math-expr">(<i>ax</i>&plusmn;<i>by</i>)<sup>2</sup></span> 及 多項混合 <span class="math-expr">(<i>ax</i>+<i>b</i>)<sup>2</sup> - <i>c</i><sup>2</sup><i>y</i><sup>2</sup></span></p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <button onclick="toggleVaultModal()" class="px-3 py-1.5 rounded-xl bg-hkRed text-hkGold border border-hkGold hover:bg-red-800 text-xs font-bold transition flex items-center space-x-1 shadow-md">
+                <i class="fas fa-book"></i>
+                <span>公式寶典</span>
+            </button>
+            <button id="soundBtn" onclick="toggleSound()" class="px-3 py-1.5 rounded-xl bg-hkWood text-hkGold border border-hkGold hover:bg-yellow-900 text-xs font-bold transition flex items-center space-x-1 shadow-md">
+                <i class="fas fa-volume-up" id="soundIcon"></i>
+                <span id="soundTxt">音效: 開</span>
+            </button>
+            <div class="px-3 py-1.5 rounded-xl bg-hkRed border border-hkGold text-yellow-200 text-xs font-bold flex items-center space-x-1 shadow-md">
+                <i class="fas fa-trophy text-hkGold"></i>
+                <span>最高分: <span id="highScoreTxt">0</span></span>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full max-w-4xl mx-auto flex-grow flex flex-col justify-center items-center relative z-10">
+
+        <!-- 1. MAIN MENU -->
+        <section id="mainMenu" class="w-full hk-card p-6 sm:p-10 text-center animate-wiggle my-auto">
+            <div class="inline-block bg-hkRed text-hkGold px-4 py-1 rounded-full text-xs sm:text-sm font-bold border-2 border-hkGold mb-3">
+                完全平方與平方差進階混合 (Advanced Mixed Factorization)
+            </div>
+            <h2 class="text-3xl sm:text-5xl font-black text-hkWood font-hk-style mb-4">
+                糖黐豆：拆開與黐埋！
+            </h2>
+            <p class="text-gray-700 text-sm sm:text-base max-w-2xl mx-auto mb-6 leading-relaxed font-medium">
+                挑戰多步驟進階因式分解！結合完全平方與平方差多重變換：<br>
+                <span class="inline-block my-2 px-4 py-2 bg-yellow-100 rounded-xl text-xs sm:text-sm font-bold text-hkWood border-2 border-yellow-400 shadow-inner">
+                    基礎平方差: <span class="math-expr text-hkRed"><i>a</i><sup>2</sup><i>x</i><sup>2</sup> - <i>b</i><sup>2</sup> &harr; (<i>ax</i> - <i>b</i>)(<i>ax</i> + <i>b</i>)</span><br>
+                    進階三項/四項混合: <span class="math-expr text-purple-700"><i>a</i><sup>2</sup><i>x</i><sup>2</sup> + 2<i>ax</i> + 1 - <i>c</i><sup>2</sup><i>y</i><sup>2</sup> &harr; (<i>ax</i> + 1 - <i>cy</i>)(<i>ax</i> + 1 + <i>cy</i>)</span>
+                </span><br>
+                每題答對 <strong class="text-green-600">+10分</strong>，答錯 <strong class="text-red-600">-10分</strong>！
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto mt-4">
+                <button onclick="startMatchGame()" class="hk-btn p-4 rounded-2xl flex flex-col items-center justify-center space-y-2 group">
+                    <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center text-2xl text-hkWood group-hover:scale-110 transition">
+                        <i class="fas fa-hand-pointer"></i>
+                    </div>
+                    <span class="text-base sm:text-lg">1. 雙向配對大作戰</span>
+                    <span class="text-xs font-normal text-gray-700">
+                        點擊卡牌互相配對<br>
+                        包含基礎與混合進階題
+                    </span>
+                </button>
+
+                <button onclick="startSpeedQuiz()" class="hk-btn hk-btn-green p-4 rounded-2xl flex flex-col items-center justify-center space-y-2 group">
+                    <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-2xl text-hkJade group-hover:scale-110 transition">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <span class="text-base sm:text-lg">2. 雙向限時快問快答</span>
+                    <span class="text-xs font-normal text-green-100">
+                        60秒極速搶答<br>
+                        答對 +10分 | 答錯 -10分
+                    </span>
+                </button>
+
+                <button onclick="showScreen('exploreScreen')" class="hk-btn hk-btn-purple p-4 rounded-2xl flex flex-col items-center justify-center space-y-2 group">
+                    <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-2xl text-purple-800 group-hover:scale-110 transition">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <span class="text-base sm:text-lg">3. 進階動態演示</span>
+                    <span class="text-xs font-normal text-purple-100">
+                        包含三項/四項多重因式分解<br>
+                        逐步拆解變換過程
+                    </span>
+                </button>
+            </div>
+        </section>
+
+        <!-- 2. MATCH GAME SCREEN -->
+        <section id="matchScreen" class="w-full hk-card p-4 sm:p-6 hidden relative">
+            <div class="flex justify-between items-center mb-3 border-b-2 border-yellow-200 pb-3">
+                <div class="flex items-center space-x-3">
+                    <h3 class="text-xl sm:text-2xl font-bold font-hk-style text-hkWood">
+                        <i class="fas fa-object-group text-hkRed"></i> 雙向糖黐豆配對大作戰
+                    </h3>
+                    <div class="text-xs bg-yellow-100 px-3 py-1 rounded-full text-hkWood border border-yellow-400 font-bold">
+                        關卡: <span id="matchCompleted">1</span>/5 | 得分: <span id="matchScore" class="text-hkRed font-black">0</span>
+                    </div>
+                </div>
+                <button onclick="showScreen('mainMenu')" class="text-xs font-bold bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1.5 rounded-lg border border-gray-400">
+                    <i class="fas fa-home"></i> 返回主頁
+                </button>
+            </div>
+
+            <div class="bg-amber-100 border-2 border-amber-300 rounded-xl p-2.5 mb-4 text-center text-xs sm:text-sm font-bold text-hkWood flex items-center justify-center gap-2">
+                <i class="fas fa-exchange-alt text-hkRed"></i>
+                <span id="matchDirectionText">請點擊左邊的代數式，再點擊右邊對應相等的表達式進行配對！</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto my-2">
+                <div class="flex flex-col gap-3" id="matchLeftCol"></div>
+                <div class="flex flex-col gap-3" id="matchRightCol"></div>
+            </div>
+        </section>
+
+        <!-- 3. SPEED QUIZ SCREEN -->
+        <section id="speedScreen" class="w-full hk-card p-4 sm:p-8 hidden">
+            <div class="flex justify-between items-center mb-4 bg-hkWood text-hkGold p-3 rounded-xl border-2 border-hkGold">
+                <div class="flex items-center space-x-4">
+                    <div>
+                        <span class="text-xs block text-gray-300">得分 Score</span>
+                        <span id="speedScore" class="text-xl sm:text-2xl font-black text-hkGold">0</span>
+                    </div>
+                    <div>
+                        <span class="text-xs block text-gray-300">連擊 Streak</span>
+                        <span id="speedStreak" class="text-xl sm:text-2xl font-black text-green-400">0 🔥</span>
+                    </div>
+                </div>
+
+                <div class="w-1/3 text-center">
+                    <span class="text-xs block text-gray-300 mb-1">剩餘時間 Time</span>
+                    <div class="w-full bg-gray-700 h-4 rounded-full overflow-hidden border border-yellow-500">
+                        <div id="timerBar" class="bg-hkGold h-full w-full transition-all duration-200"></div>
+                    </div>
+                </div>
+
+                <button onclick="showScreen('mainMenu')" class="text-xs font-bold bg-red-800 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg border border-red-500">
+                    <i class="fas fa-sign-out-alt"></i> 退出
+                </button>
+            </div>
+
+            <div class="bg-yellow-50 p-6 sm:p-8 rounded-2xl border-4 border-hkGold text-center relative overflow-hidden shadow-inner mb-6">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-widest">
+                        第 <span id="questionCount">1</span> 題 Question
+                    </span>
+                    <span id="questionDirectionTag" class="text-xs font-bold px-3 py-1 rounded-full bg-hkRed text-white">
+                        因式分解 Factorize
+                    </span>
+                </div>
+
+                <div class="text-xl sm:text-3xl font-black text-hkWood my-4">
+                    <span id="speedQuestionText" class="inline-block bg-white px-6 py-3 rounded-2xl border-2 border-yellow-400 shadow-md math-expr">
+                        (2<i>x</i> + 1)<sup>2</sup> - 9<i>y</i><sup>2</sup> = ?
+                    </span>
+                </div>
+
+                <p class="text-xs sm:text-sm text-gray-600 font-medium" id="speedPromptText">
+                    請選擇正確的相等表達式：
+                </p>
+            </div>
+
+            <div id="speedOptions" class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4"></div>
+        </section>
+
+        <!-- 4. EXPLORE DEMO SCREEN -->
+        <section id="exploreScreen" class="w-full hk-card p-4 sm:p-8 hidden">
+            <div class="flex justify-between items-center mb-4 border-b-2 border-yellow-200 pb-3">
+                <h3 class="text-xl sm:text-2xl font-bold font-hk-style text-hkWood flex items-center gap-2">
+                    <i class="fas fa-graduation-cap text-hkRed"></i> 雙向糖黐豆動態演示
+                </h3>
+                <button onclick="showScreen('mainMenu')" class="text-xs font-bold bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1.5 rounded-lg border border-gray-400">
+                    <i class="fas fa-home"></i> 返回主頁
+                </button>
+            </div>
+
+            <div class="bg-yellow-50 p-4 sm:p-5 rounded-2xl border-2 border-yellow-300 mb-5 flex flex-col gap-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <span class="font-bold text-gray-800 text-sm">公式類型 Formula Type:</span>
+                    <div class="flex flex-wrap gap-2">
+                        <button id="btnTypeDiff" onclick="setDemoType('diff')" class="hk-btn hk-btn-red text-xs px-3 py-1.5 rounded-xl">
+                            基礎平方差
+                        </button>
+                        <button id="btnTypePerfPlus" onclick="setDemoType('perfPlus')" class="hk-btn text-xs px-3 py-1.5 rounded-xl opacity-60">
+                            完全平方和
+                        </button>
+                        <button id="btnTypeAdvSquareMinus" onclick="setDemoType('advSquareMinus')" class="hk-btn hk-btn-purple text-xs px-3 py-1.5 rounded-xl opacity-60">
+                            進階: (ax+b)<sup>2</sup> - c<sup>2</sup>y<sup>2</sup>
+                        </button>
+                        <button id="btnTypeAdvFourTerm" onclick="setDemoType('advFourTerm')" class="hk-btn hk-btn-purple text-xs px-3 py-1.5 rounded-xl opacity-60">
+                            進階四項: a<sup>2</sup>x<sup>2</sup>-by<sup>2</sup>+...
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-3 border-t border-yellow-200 pt-3">
+                    <span class="font-bold text-gray-800 text-sm">演示方向 Direction:</span>
+                    <div class="flex gap-2">
+                        <button id="btnDirFactor" onclick="setDemoDirection('factor')" class="hk-btn hk-btn-green text-xs px-3 py-1.5 rounded-xl">
+                            因式分解 Factorize
+                        </button>
+                        <button id="btnDirExpand" onclick="setDemoDirection('expand')" class="hk-btn text-xs px-3 py-1.5 rounded-xl opacity-60">
+                            展開計算 Expand
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-yellow-200 pt-3">
+                    <div>
+                        <label for="aSlider" class="block font-bold text-gray-800 mb-2 flex justify-between items-center text-xs sm:text-sm">
+                            <span>數值 <span class="math-expr font-black text-hkRed">a</span>:</span>
+                            <span class="font-black text-hkRed font-mono bg-white px-2 py-0.5 rounded-lg border border-yellow-400" id="aValueLabel">a = 2</span>
+                        </label>
+                        <input type="range" id="aSlider" min="1" max="8" value="2" class="w-full h-2 bg-yellow-200 rounded-lg appearance-none cursor-pointer accent-hkRed" oninput="updateInteractiveDemo()">
+                    </div>
+                    <div>
+                        <label for="bSlider" class="block font-bold text-gray-800 mb-2 flex justify-between items-center text-xs sm:text-sm">
+                            <span>數值 <span class="math-expr font-black text-blue-600">b</span>:</span>
+                            <span class="font-black text-blue-600 font-mono bg-white px-2 py-0.5 rounded-lg border border-yellow-400" id="bValueLabel">b = 3</span>
+                        </label>
+                        <input type="range" id="bSlider" min="1" max="8" value="3" class="w-full h-2 bg-yellow-200 rounded-lg appearance-none cursor-pointer accent-blue-600" oninput="updateInteractiveDemo()">
+                    </div>
+                    <div>
+                        <label for="cSlider" class="block font-bold text-gray-800 mb-2 flex justify-between items-center text-xs sm:text-sm">
+                            <span>進階數值 <span class="math-expr font-black text-purple-600">c</span>:</span>
+                            <span class="font-black text-purple-600 font-mono bg-white px-2 py-0.5 rounded-lg border border-yellow-400" id="cValueLabel">c = 1</span>
+                        </label>
+                        <input type="range" id="cSlider" min="1" max="5" value="1" class="w-full h-2 bg-yellow-200 rounded-lg appearance-none cursor-pointer accent-purple-600" oninput="updateInteractiveDemo()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative bg-gradient-to-b from-amber-100 to-orange-100 p-6 rounded-2xl border-2 border-amber-300 text-center mb-5 overflow-hidden min-h-[220px] flex flex-col justify-center items-center shadow-inner">
+                <div id="beanGroup" class="flex flex-wrap items-center justify-center gap-3 sm:gap-6 my-2 transition-all duration-500"></div>
+                <div id="formulaExplanation" class="mt-4 text-sm sm:text-lg font-black text-hkWood bg-white/95 px-6 py-2.5 rounded-2xl border-2 border-hkGold shadow-md math-expr"></div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
+                <div class="bg-purple-50 p-3.5 rounded-xl border border-purple-200 text-purple-900 flex items-start space-x-2">
+                    <i class="fas fa-layer-group text-purple-600 text-lg mt-0.5"></i>
+                    <div>
+                        <strong class="block font-bold">進階多重技巧 Advanced Skills:</strong>
+                        先利用完全平方公式組構成 <span class="math-expr">(<i>ax</i>+<i>b</i>)<sup>2</sup></span>，再套用平方差 <span class="math-expr"><i>A</i><sup>2</sup> - <i>B</i><sup>2</sup> = (<i>A</i>-<i>B</i>)(<i>A</i>+<i>B</i>)</span> 完成分解！
+                    </div>
+                </div>
+                <div class="bg-blue-50 p-3.5 rounded-xl border border-blue-200 text-blue-900 flex items-start space-x-2">
+                    <i class="fas fa-random text-blue-600 text-lg mt-0.5"></i>
+                    <div>
+                        <strong class="block font-bold">雙向互換 Expansion & Factorization:</strong>
+                        不論是由括號展開成多項式，或是由複雜多項式拆解為最簡因式，皆能輕鬆應對！
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal: Formula Vault -->
+    <div id="vaultModal" class="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 hidden">
+        <div class="hk-card p-6 max-w-lg w-full relative max-h-[90vh] overflow-y-auto">
+            <button onclick="toggleVaultModal()" class="absolute top-4 right-4 text-gray-500 hover:text-black text-xl font-bold">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3 class="text-2xl font-black font-hk-style text-hkWood mb-2 flex items-center gap-2">
+                <i class="fas fa-book text-hkRed"></i> 因式分解進階寶典
+            </h3>
+            <p class="text-xs text-gray-600 mb-4">掌握標準與混合技巧，輕鬆破解各類代數難題！</p>
+
+            <div class="grid grid-cols-1 gap-2 font-mono text-sm" id="vaultGrid"></div>
+        </div>
+    </div>
+
+    <!-- Modal: Result / Game Over -->
+    <div id="resultModal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
+        <div class="hk-card p-6 sm:p-8 max-w-md w-full text-center relative animate-wiggle">
+            <div class="w-16 h-16 bg-hkGold text-hkWood rounded-full flex items-center justify-center text-3xl mx-auto mb-3 border-4 border-hkWood shadow-lg">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <h3 class="text-3xl font-black font-hk-style text-hkWood mb-1" id="resultTitle">挑戰完成！</h3>
+            <p class="text-xs text-gray-600 mb-4" id="resultSubtitle">代數糖黐豆成績結算</p>
+
+            <div class="bg-yellow-100 p-4 rounded-2xl border-2 border-yellow-300 mb-6 space-y-2">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-gray-700 font-bold">最終得分 Final Score:</span>
+                    <span id="finalScoreText" class="text-2xl font-black text-hkRed">0</span>
+                </div>
+                <div class="flex justify-between items-center text-sm border-t border-yellow-300 pt-2">
+                    <span class="text-gray-700 font-bold">表現評級 Rating:</span>
+                    <span id="finalRatingText" class="text-base font-bold text-hkWood">糖黐豆大師</span>
+                </div>
+            </div>
+
+            <button onclick="closeResultModal()" class="hk-btn hk-btn-green w-full py-3 rounded-2xl text-lg font-black">
+                <i class="fas fa-redo"></i> 再次挑戰
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* Audio Synthesizer via Web Audio API */
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundIcon').className = soundEnabled ? "fas fa-volume-up" : "fas fa-volume-mute";
+            document.getElementById('soundTxt').innerText = soundEnabled ? "音效: 開" : "音效: 關";
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            initAudio();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'win') {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const noteOsc = audioCtx.createOscillator();
+                    const noteGain = audioCtx.createGain();
+                    noteOsc.connect(noteGain);
+                    noteGain.connect(audioCtx.destination);
+                    noteOsc.frequency.value = freq;
+                    noteGain.gain.setValueAtTime(0.15, now + idx * 0.1);
+                    noteGain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.1 + 0.25);
+                    noteOsc.start(now + idx * 0.1);
+                    noteOsc.stop(now + idx * 0.1 + 0.25);
+                });
+            }
+        }
+
+        /* Particle Overlay System */
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function triggerParticles(x, y, count = 20) {
+            const colors = ['#F8C300', '#C8102E', '#00A86B', '#A855F7', '#FFFFFF'];
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10 - 2,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    radius: Math.random() * 4 + 2,
+                    alpha: 1,
+                    decay: Math.random() * 0.03 + 0.015
+                });
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, index) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= p.decay;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = Math.max(0, p.alpha);
+                ctx.fill();
+
+                if (p.alpha <= 0) {
+                    particles.splice(index, 1);
+                }
+            });
+            ctx.globalAlpha = 1.0;
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        let highScore = parseInt(localStorage.getItem('hk_beans_highscore_adv') || '0');
+        document.getElementById('highScoreTxt').innerText = highScore;
+
+        function updateHighScore(newScore) {
+            if (newScore > highScore) {
+                highScore = newScore;
+                localStorage.setItem('hk_beans_highscore_adv', highScore.toString());
+                document.getElementById('highScoreTxt').innerText = highScore;
+            }
+        }
+
+        function showScreen(screenId) {
+            ['mainMenu', 'matchScreen', 'speedScreen', 'exploreScreen'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+
+            if (screenId === 'exploreScreen') {
+                updateInteractiveDemo();
+            }
+        }
+
+        function showScoreFloating(x, y, text, isPositive) {
+            const el = document.createElement('div');
+            el.className = `fixed pointer-events-none z-50 text-2xl font-black ${isPositive ? 'float-score-plus' : 'float-score-minus'}`;
+            el.innerText = text;
+            el.style.left = `${x - 20}px`;
+            el.style.top = `${y - 20}px`;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 850);
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* Formula Generators: Standard & Advanced Mixed Factorizations              */
+        /* -------------------------------------------------------------------------- */
+
+        // Types: 'diff' | 'perfPlus' | 'perfMinus' | 'advSquareMinus' | 'advFourTerm' | 'advGroupMinus'
+        function getExpandedExpr(type, a, b, c = 1) {
+            const aSq = a * a;
+            const bSq = b * b;
+            const cSq = c * c;
+
+            const termX2 = (aSq === 1) ? `<i>x</i><sup>2</sup>` : `${aSq}<i>x</i><sup>2</sup>`;
+            const termY2 = (cSq === 1) ? `<i>y</i><sup>2</sup>` : `${cSq}<i>y</i><sup>2</sup>`;
+            const termBSq = (bSq === 1) ? `<i>y</i><sup>2</sup>` : `${bSq}<i>y</i><sup>2</sup>`;
+
+            if (type === 'diff') {
+                return `${termX2} - ${bSq}`;
+            } else if (type === 'perfPlus') {
+                const middle = 2 * a * b;
+                return `${termX2} + ${middle}<i>x</i> + ${bSq}`;
+            } else if (type === 'perfMinus') {
+                const middle = 2 * a * b;
+                return `${termX2} - ${middle}<i>x</i> + ${bSq}`;
+            } else if (type === 'advSquareMinus') {
+                // (ax + b)^2 - c^2 y^2
+                return `(${a === 1 ? '<i>x</i>' : a + '<i>x</i>'} + ${b})<sup>2</sup> - ${termY2}`;
+            } else if (type === 'advFourTerm') {
+                // a^2 x^2 + 2ab x + b^2 - c^2 y^2
+                const middle = 2 * a * b;
+                return `${termX2} + ${middle}<i>x</i> + ${bSq} - ${termY2}`;
+            } else if (type === 'advGroupMinus') {
+                // c^2 x^2 - (a y + b)^2 = c^2 x^2 - a^2 y^2 - 2ab y - b^2
+                const middle = 2 * a * b;
+                const termA2Y2 = (aSq === 1) ? `<i>y</i><sup>2</sup>` : `${aSq}<i>y</i><sup>2</sup>`;
+                const termX2C = (cSq === 1) ? `<i>x</i><sup>2</sup>` : `${cSq}<i>x</i><sup>2</sup>`;
+                return `${termX2C} - ${termA2Y2} - ${middle}<i>y</i> - ${bSq}`;
+            }
+        }
+
+        function getFactorizedExpr(type, a, b, c = 1) {
+            const termA = (a === 1) ? `<i>x</i>` : `${a}<i>x</i>`;
+            const termCY = (c === 1) ? `<i>y</i>` : `${c}<i>y</i>`;
+            const termCX = (c === 1) ? `<i>x</i>` : `${c}<i>x</i>`;
+            const termAY = (a === 1) ? `<i>y</i>` : `${a}<i>y</i>`;
+
+            if (type === 'diff') {
+                return `(${termA} - ${b})(${termA} + ${b})`;
+            } else if (type === 'perfPlus') {
+                return `(${termA} + ${b})<sup>2</sup>`;
+            } else if (type === 'perfMinus') {
+                return `(${termA} - ${b})<sup>2</sup>`;
+            } else if (type === 'advSquareMinus' || type === 'advFourTerm') {
+                // (ax + b - cy)(ax + b + cy)
+                return `(${termA} + ${b} - ${termCY})(${termA} + ${b} + ${termCY})`;
+            } else if (type === 'advGroupMinus') {
+                // c^2 x^2 - (ay + b)^2 = (cx - ay - b)(cx + ay + b)
+                return `(${termCX} - ${termAY} - ${b})(${termCX} + ${termAY} + ${b})`;
+            }
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* Mode 1: Match Game Logic                                                   */
+        /* -------------------------------------------------------------------------- */
+        let matchStage = 1;
+        let matchScore = 0;
+        let selectedLeftCard = null;
+        let matchPairsFound = 0;
+        let matchTotalPairs = 4;
+        let currentMatchDirection = 'factor';
+
+        function startMatchGame() {
+            matchStage = 1;
+            matchScore = 0;
+            showScreen('matchScreen');
+            loadMatchStage();
+        }
+
+        function loadMatchStage() {
+            selectedLeftCard = null;
+            matchPairsFound = 0;
+            document.getElementById('matchCompleted').innerText = matchStage;
+            document.getElementById('matchScore').innerText = matchScore;
+
+            currentMatchDirection = Math.random() > 0.5 ? 'factor' : 'expand';
+            
+            const dirBanner = document.getElementById('matchDirectionText');
+            if (currentMatchDirection === 'factor') {
+                dirBanner.innerHTML = '因式分解模式: 將多項式與混合結構配對至對應的最簡因式分解！';
+            } else {
+                dirBanner.innerHTML = '展開模式: 將因式與雙括號化簡配對至多項式展開式！';
+            }
+
+            // Mix basic and advanced types
+            const configs = [
+                { type: 'diff' },
+                { type: 'perfPlus' },
+                { type: 'advSquareMinus' },
+                { type: Math.random() > 0.5 ? 'advFourTerm' : 'advGroupMinus' }
+            ].sort(() => Math.random() - 0.5);
+
+            const pairValues = [];
+            configs.forEach(config => {
+                let randA, randB, randC;
+                do {
+                    randA = Math.floor(Math.random() * 5) + 1; // 1 to 5
+                    randB = Math.floor(Math.random() * 5) + 1; // 1 to 5
+                    randC = Math.floor(Math.random() * 4) + 1; // 1 to 4
+                } while (pairValues.some(p => p.a === randA && p.b === randB && p.type === config.type));
+
+                pairValues.push({
+                    type: config.type,
+                    a: randA,
+                    b: randB,
+                    c: randC
+                });
+            });
+
+            const leftCol = document.getElementById('matchLeftCol');
+            const rightCol = document.getElementById('matchRightCol');
+            leftCol.innerHTML = '';
+            rightCol.innerHTML = '';
+
+            const shuffledPairs = [...pairValues].sort(() => Math.random() - 0.5);
+
+            pairValues.forEach((item, idx) => {
+                const card = document.createElement('div');
+                card.id = `left-${idx}`;
+                card.className = 'p-3 sm:p-4 bg-white rounded-2xl border-3 border-yellow-400 text-hkWood text-center font-bold text-xs sm:text-base cursor-pointer hover:border-hkRed transition shadow-sm select-none';
+                
+                const expStr = getExpandedExpr(item.type, item.a, item.b, item.c);
+                const factStr = getFactorizedExpr(item.type, item.a, item.b, item.c);
+
+                card.innerHTML = `<span class="math-expr">${currentMatchDirection === 'factor' ? expStr : factStr}</span>`;
+                card.onclick = () => selectLeftCard(item, card);
+                leftCol.appendChild(card);
+            });
+
+            shuffledPairs.forEach((item, idx) => {
+                const card = document.createElement('div');
+                card.id = `right-${idx}`;
+                card.className = 'p-3 sm:p-4 bg-white rounded-2xl border-3 border-yellow-400 text-hkWood text-center font-bold text-xs sm:text-base cursor-pointer hover:border-hkGold transition shadow-sm select-none';
+                
+                const expStr = getExpandedExpr(item.type, item.a, item.b, item.c);
+                const factStr = getFactorizedExpr(item.type, item.a, item.b, item.c);
+
+                card.innerHTML = `<span class="math-expr">${currentMatchDirection === 'factor' ? factStr : expStr}</span>`;
+                card.onclick = (e) => selectRightCard(item, card, e);
+                rightCol.appendChild(card);
+            });
+        }
+
+        function selectLeftCard(item, element) {
+            if (element.classList.contains('opacity-40')) return;
+            
+            document.querySelectorAll('#matchLeftCol > div').forEach(el => el.classList.remove('card-selected'));
+            element.classList.add('card-selected');
+            selectedLeftCard = { item: item, element: element };
+            playSound('correct');
+        }
+
+        function selectRightCard(targetItem, element, event) {
+            if (element.classList.contains('opacity-40')) return;
+            if (!selectedLeftCard) {
+                element.classList.add('bg-red-100');
+                setTimeout(() => element.classList.remove('bg-red-100'), 300);
+                return;
+            }
+
+            const clickX = event.clientX || window.innerWidth / 2;
+            const clickY = event.clientY || window.innerHeight / 2;
+
+            const s = selectedLeftCard.item;
+            const t = targetItem;
+
+            if (s.a === t.a && s.b === t.b && s.c === t.c && s.type === t.type) {
+                // Correct Match
+                playSound('correct');
+                matchScore += 10;
+                document.getElementById('matchScore').innerText = matchScore;
+                showScoreFloating(clickX, clickY, "+10", true);
+                triggerParticles(clickX, clickY, 15);
+
+                selectedLeftCard.element.className = 'p-3 sm:p-4 bg-green-100 rounded-2xl border-3 border-green-500 text-green-800 text-center font-bold text-xs sm:text-base opacity-40 pointer-events-none';
+                element.className = 'p-3 sm:p-4 bg-green-100 rounded-2xl border-3 border-green-500 text-green-800 text-center font-bold text-xs sm:text-base opacity-40 pointer-events-none';
+
+                selectedLeftCard = null;
+                matchPairsFound++;
+
+                if (matchPairsFound === matchTotalPairs) {
+                    playSound('win');
+                    setTimeout(() => {
+                        if (matchStage < 5) {
+                            matchStage++;
+                            loadMatchStage();
+                        } else {
+                            endGameModal("進階混合配對全勝通關！", matchScore, "5 關全部完成");
+                        }
+                    }, 600);
+                }
+            } else {
+                // Wrong Match
+                playSound('wrong');
+                matchScore = Math.max(0, matchScore - 10);
+                document.getElementById('matchScore').innerText = matchScore;
+                showScoreFloating(clickX, clickY, "-10", false);
+
+                element.classList.add('bg-red-200');
+                setTimeout(() => element.classList.remove('bg-red-200'), 400);
+            }
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* Mode 2: Speed Quiz Logic                                                   */
+        /* -------------------------------------------------------------------------- */
+        let speedScore = 0;
+        let speedStreak = 0;
+        let maxStreak = 0;
+        let speedTimer = null;
+        let timeLeft = 60;
+        let questionNumber = 1;
+
+        function startSpeedQuiz() {
+            speedScore = 0;
+            speedStreak = 0;
+            maxStreak = 0;
+            timeLeft = 60;
+            questionNumber = 1;
+
+            document.getElementById('speedScore').innerText = '0';
+            document.getElementById('speedStreak').innerText = '0 🔥';
+            document.getElementById('timerBar').style.width = '100%';
+
+            showScreen('speedScreen');
+
+            if (speedTimer) clearInterval(speedTimer);
+            speedTimer = setInterval(() => {
+                timeLeft--;
+                const pct = (timeLeft / 60) * 100;
+                document.getElementById('timerBar').style.width = `${pct}%`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(speedTimer);
+                    playSound('win');
+                    endGameModal("60秒極速搶答結束！", speedScore, `最高連擊: ${maxStreak} 次`);
+                }
+            }, 1000);
+
+            generateSpeedQuestion();
+        }
+
+        function generateSpeedQuestion() {
+            document.getElementById('questionCount').innerText = questionNumber;
+
+            const types = ['diff', 'perfPlus', 'perfMinus', 'advSquareMinus', 'advFourTerm', 'advGroupMinus'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            const a = Math.floor(Math.random() * 5) + 1;
+            const b = Math.floor(Math.random() * 5) + 1;
+            const c = Math.floor(Math.random() * 4) + 1;
+            const isFactorizing = Math.random() > 0.4;
+
+            const directionTag = document.getElementById('questionDirectionTag');
+            const qText = document.getElementById('speedQuestionText');
+
+            let correctAnswerStr = '';
+            let options = [];
+
+            const expStr = getExpandedExpr(type, a, b, c);
+            const factStr = getFactorizedExpr(type, a, b, c);
+
+            if (isFactorizing) {
+                directionTag.innerText = type.startsWith('adv') ? "進階因式分解 Adv Factorize" : "基礎因式分解 Factorize";
+                directionTag.className = type.startsWith('adv') ? "text-xs font-bold px-3 py-1 rounded-full bg-purple-600 text-white" : "text-xs font-bold px-3 py-1 rounded-full bg-hkRed text-white";
+                qText.innerHTML = `${expStr} = ?`;
+                correctAnswerStr = factStr;
+
+                options.push(correctAnswerStr);
+
+                // Add plausible distractors
+                if (type.startsWith('adv')) {
+                    options.push(`(${a === 1 ? '<i>x</i>' : a + '<i>x</i>'} - ${b} - ${c === 1 ? '<i>y</i>' : c + '<i>y</i>'})(${a === 1 ? '<i>x</i>' : a + '<i>x</i>'} - ${b} + ${c === 1 ? '<i>y</i>' : c + '<i>y</i>'})`);
+                    options.push(`(${a === 1 ? '<i>x</i>' : a + '<i>x</i>'} + ${b} + ${c === 1 ? '<i>y</i>' : c + '<i>y</i>'})<sup>2</sup>`);
+                    options.push(getFactorizedExpr(type, a + 1, b, c));
+                } else if (type === 'diff') {
+                    options.push(getFactorizedExpr('perfMinus', a, b));
+                    options.push(getFactorizedExpr('perfPlus', a, b));
+                    options.push(getFactorizedExpr('diff', a, b + 1));
+                } else {
+                    options.push(getFactorizedExpr('perfPlus', a, b));
+                    options.push(getFactorizedExpr('diff', a, b));
+                    options.push(getFactorizedExpr('perfMinus', a + 1, b));
+                }
+            } else {
+                directionTag.innerText = "展開計算 Expand";
+                directionTag.className = "text-xs font-bold px-3 py-1 rounded-full bg-blue-600 text-white";
+                qText.innerHTML = `${factStr} = ?`;
+                correctAnswerStr = expStr;
+
+                options.push(correctAnswerStr);
+                options.push(getExpandedExpr('diff', a, b, c));
+                options.push(getExpandedExpr('perfPlus', a, b, c));
+                options.push(getExpandedExpr(type, a + 1, b, c));
+            }
+
+            options = Array.from(new Set(options));
+            while (options.length < 4) {
+                options.push(getFactorizedExpr('diff', a + options.length, b, c));
+            }
+            options.sort(() => Math.random() - 0.5);
+
+            const optionsContainer = document.getElementById('speedOptions');
+            optionsContainer.innerHTML = '';
+
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'hk-btn p-3 sm:p-4 rounded-2xl text-xs sm:text-sm font-bold font-mono math-expr text-hkWood hover:bg-yellow-200 transition';
+                btn.innerHTML = opt;
+                btn.onclick = (e) => handleSpeedAnswer(opt === correctAnswerStr, btn, e);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function handleSpeedAnswer(isCorrect, btn, event) {
+            const clickX = event ? event.clientX : window.innerWidth / 2;
+            const clickY = event ? event.clientY : window.innerHeight / 2;
+
+            if (isCorrect) {
+                playSound('correct');
+                btn.classList.add('bg-green-500', 'text-white');
+                speedStreak++;
+                if (speedStreak > maxStreak) maxStreak = speedStreak;
+
+                speedScore += 10;
+                document.getElementById('speedScore').innerText = speedScore;
+                document.getElementById('speedStreak').innerText = `${speedStreak} 🔥`;
+
+                showScoreFloating(clickX, clickY, "+10", true);
+                triggerParticles(clickX, clickY, 15);
+            } else {
+                playSound('wrong');
+                btn.classList.add('bg-red-500', 'text-white');
+                speedStreak = 0;
+                document.getElementById('speedStreak').innerText = '0 🔥';
+
+                speedScore = Math.max(0, speedScore - 10);
+                document.getElementById('speedScore').innerText = speedScore;
+
+                showScoreFloating(clickX, clickY, "-10", false);
+            }
+
+            questionNumber++;
+            setTimeout(generateSpeedQuestion, 350);
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* Mode 3: Dynamic Interactive Demo Logic                                     */
+        /* -------------------------------------------------------------------------- */
+        let demoType = 'advSquareMinus'; // 'diff' | 'perfPlus' | 'advSquareMinus' | 'advFourTerm'
+        let demoDirection = 'factor';
+
+        function setDemoType(type) {
+            demoType = type;
+            document.getElementById('btnTypeDiff').className = (type === 'diff') ? "hk-btn hk-btn-red text-xs px-3 py-1.5 rounded-xl" : "hk-btn text-xs px-3 py-1.5 rounded-xl opacity-60";
+            document.getElementById('btnTypePerfPlus').className = (type === 'perfPlus') ? "hk-btn hk-btn-green text-xs px-3 py-1.5 rounded-xl" : "hk-btn text-xs px-3 py-1.5 rounded-xl opacity-60";
+            document.getElementById('btnTypeAdvSquareMinus').className = (type === 'advSquareMinus') ? "hk-btn hk-btn-purple text-xs px-3 py-1.5 rounded-xl" : "hk-btn text-xs px-3 py-1.5 rounded-xl opacity-60";
+            document.getElementById('btnTypeAdvFourTerm').className = (type === 'advFourTerm') ? "hk-btn hk-btn-purple text-xs px-3 py-1.5 rounded-xl" : "hk-btn text-xs px-3 py-1.5 rounded-xl opacity-60";
+            
+            updateInteractiveDemo();
+        }
+
+        function setDemoDirection(dir) {
+            demoDirection = dir;
+            document.getElementById('btnDirFactor').className = (dir === 'factor') ? "hk-btn hk-btn-green text-xs px-3 py-1.5 rounded-xl" : "hk-btn text-xs px-3 py-1.5 rounded-xl opacity-60";
+            document.getElementById('btnDirExpand').className = (dir === 'expand') ? "hk-btn hk-btn-red text-xs px-3 py-1.5 rounded-xl" : "hk-btn text-xs px-3 py-1.5 rounded-xl opacity-60";
+            
+            updateInteractiveDemo();
+        }
+
+        function updateInteractiveDemo() {
+            const aVal = parseInt(document.getElementById('aSlider').value);
+            const bVal = parseInt(document.getElementById('bSlider').value);
+            const cVal = parseInt(document.getElementById('cSlider').value);
+
+            document.getElementById('aValueLabel').innerText = `a = ${aVal}`;
+            document.getElementById('bValueLabel').innerText = `b = ${bVal}`;
+            document.getElementById('cValueLabel').innerText = `c = ${cVal}`;
+
+            const beanGroup = document.getElementById('beanGroup');
+            const explanation = document.getElementById('formulaExplanation');
+
+            const expStr = getExpandedExpr(demoType, aVal, bVal, cVal);
+            const factStr = getFactorizedExpr(demoType, aVal, bVal, cVal);
+
+            if (demoDirection === 'factor') {
+                beanGroup.innerHTML = `
+                    <div class="bg-hkRed text-yellow-100 p-3 sm:p-4 rounded-2xl border-3 border-hkGold shadow-lg transform hover:scale-105 transition">
+                        <span class="text-sm sm:text-xl font-black math-expr">${expStr}</span>
+                    </div>
+                    <div class="text-3xl font-black text-hkWood animate-bounce">&rarr;</div>
+                    <div class="bg-hkJade text-white p-3 sm:p-4 rounded-2xl border-3 border-green-300 shadow-lg font-black text-sm sm:text-xl math-expr">
+                        ${factStr}
+                    </div>
+                `;
+
+                if (demoType === 'advFourTerm') {
+                    explanation.innerHTML = `
+                        步驟 1 (組構完全平方): <span class="text-hkRed">${getExpandedExpr('perfPlus', aVal, bVal)}</span> - ${cVal * cVal}<i>y</i><sup>2</sup> = <span class="text-purple-700">(${aVal === 1 ? 'x' : aVal + 'x'} + ${bVal})<sup>2</sup> - (${cVal === 1 ? 'y' : cVal + 'y'})<sup>2</sup></span><br>
+                        步驟 2 (套用平方差): <span class="text-green-700">${factStr}</span>
+                    `;
+                } else {
+                    explanation.innerHTML = `
+                        因式分解: <span class="text-hkRed">${expStr}</span> 
+                        = <span class="text-green-700">${factStr}</span>
+                    `;
+                }
+            } else {
+                beanGroup.innerHTML = `
+                    <div class="bg-hkJade text-white p-3 sm:p-4 rounded-2xl border-3 border-green-300 shadow-lg font-black text-sm sm:text-xl math-expr">
+                        ${factStr}
+                    </div>
+                    <div class="text-3xl font-black text-hkWood animate-bounce">&rarr;</div>
+                    <div class="bg-blue-600 text-yellow-100 p-3 sm:p-4 rounded-2xl border-3 border-blue-300 shadow-lg transform hover:scale-105 transition">
+                        <span class="text-sm sm:text-xl font-black math-expr">${expStr}</span>
+                    </div>
+                `;
+
+                explanation.innerHTML = `
+                    展開計算: <span class="text-green-700">${factStr}</span> 
+                    = <span class="text-blue-700">${expStr}</span>
+                `;
+            }
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* Formula Vault Modal                                                        */
+        /* -------------------------------------------------------------------------- */
+        function toggleVaultModal() {
+            const modal = document.getElementById('vaultModal');
+            if (modal.classList.contains('hidden')) {
+                renderVaultGrid();
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function renderVaultGrid() {
+            const grid = document.getElementById('vaultGrid');
+            grid.innerHTML = '';
+
+            const vaultItems = [
+                { title: "1. 基礎平方差", exp: "a<sup>2</sup>x<sup>2</sup> - b<sup>2</sup>", fact: "(ax - b)(ax + b)" },
+                { title: "2. 基礎完全平方和", exp: "a<sup>2</sup>x<sup>2</sup> + 2abx + b<sup>2</sup>", fact: "(ax + b)<sup>2</sup>" },
+                { title: "3. 進階 (完全平方 - 平方)", exp: "(ax + b)<sup>2</sup> - c<sup>2</sup>y<sup>2</sup>", fact: "(ax + b - cy)(ax + b + cy)" },
+                { title: "4. 進階四項 (組構+平方差)", exp: "a<sup>2</sup>x<sup>2</sup> + 2abx + b<sup>2</sup> - c<sup>2</sup>y<sup>2</sup>", fact: "(ax + b - cy)(ax + b + cy)" },
+                { title: "5. 進階四項 (平方 - 完全平方)", exp: "c<sup>2</sup>x<sup>2</sup> - a<sup>2</sup>y<sup>2</sup> - 2aby - b<sup>2</sup>", fact: "(cx - ay - b)(cx + ay + b)" }
+            ];
+
+            vaultItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'bg-yellow-50 p-3 rounded-xl border border-yellow-300 shadow-sm';
+                card.innerHTML = `
+                    <div class="text-xs text-purple-800 font-bold mb-1">${item.title}</div>
+                    <div class="text-xs sm:text-sm font-bold text-hkRed math-expr">${item.exp}</div>
+                    <div class="text-xs sm:text-sm font-bold text-green-700 math-expr">&harr; ${item.fact}</div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /* End Game & Result Modal                                                    */
+        /* -------------------------------------------------------------------------- */
+        function endGameModal(title, score, detailText) {
+            updateHighScore(score);
+
+            document.getElementById('resultTitle').innerText = title;
+            document.getElementById('finalScoreText').innerText = score;
+
+            let rating = "代數初學者";
+            if (score >= 120) rating = "進階代數宗師 (Grand Master)";
+            else if (score >= 80) rating = "因式分解高手 (Expert)";
+            else if (score >= 40) rating = "熟練學員 (Proficient)";
+
+            document.getElementById('finalRatingText').innerText = `${rating} (${detailText})`;
+            document.getElementById('resultModal').classList.remove('hidden');
+        }
+
+        function closeResultModal() {
+            document.getElementById('resultModal').classList.add('hidden');
+            showScreen('mainMenu');
+        }
+    </script>
+</body>
+</html>
